@@ -1,0 +1,7 @@
+# Sizes
+SCREEN_X = 800
+SCREEN_Y = 600
+SIZE = SCREEN_Y // 10
+
+# Movement
+SPEED = 1
