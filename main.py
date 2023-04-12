@@ -27,7 +27,6 @@ def run(screen, font, statemachine):
     base_ui = models.BaseUI(ui_view, statemachine, player, opponent)
     sprite = views.CardSprite(screen, font)
     base_ui.initial_load(sprite)
-    statemachine.draw_phase()
 
     # Game loop
     while True:
