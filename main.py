@@ -38,7 +38,7 @@ def run(screen, font, statemachine):
         screen.fill(colors.BLACK)
         base_ui.draw()       
         pygame.display.update()
-        pygame.time.delay(10)
+        pygame.time.delay(100)
 
         # Events
         events = pygame.event.get()

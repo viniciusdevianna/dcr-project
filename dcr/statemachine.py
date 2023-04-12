@@ -14,5 +14,17 @@ class StateMachine():
     def summon_phase(self):
         self._state = States.SUMMONING
 
-    def battle_phase(self):
+    def prepare_battle_phase(self):
+        self._state = States.PREPARING_BATTLE
+
+    def resume_battle_phase(self):
         self._state = States.BATTLING
+
+    def end_battle_phase(self):
+        self._state = States.ENDING_BATTLE
+
+    def declare_win(self):
+        self._state = States.WINNING
+
+    def declare_loss(self):
+        self._state = States.LOSING

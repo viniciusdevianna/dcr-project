@@ -17,7 +17,10 @@ class BaseUI():
         self.opponent.load_deck(card_sprite)
 
     def _confirm_button_click(self):
-        self.statemachine.battle_phase()
+        if self.statemachine.state == States.SUMMONING:
+            self.statemachine.prepare_battle_phase()
+        if self.statemachine.state == States.BATTLING:
+            self.statemachine.end_battle_phase()
 
     def draw(self):
         self.view.draw(self.statemachine.state, self.player, self.opponent)
@@ -29,8 +32,12 @@ class BaseUI():
     def calculate_rules(self):
         if self.statemachine.state == States.DRAWING:
             self._calculate_rules_drawing()
+        if self.statemachine.state == States.PREPARING_BATTLE:
+            self._calculate_rules_preparing_battle()
         if self.statemachine.state == States.BATTLING:
             self._calculate_rules_battling()
+        if self.statemachine.state == States.ENDING_BATTLE:
+            self._calculate_rules_ending_battle()
 
     def process_events(self, events):
         for e in events:
@@ -38,6 +45,8 @@ class BaseUI():
                 exit()
         if self.statemachine.state == States.SUMMONING:
             self._process_events_summoning(events)
+        if self.statemachine.state == States.BATTLING:
+            self._process_events_battling(events)
 
     def _calculate_rules_drawing(self):
         self.player.draw_cards()
@@ -46,20 +55,40 @@ class BaseUI():
             card.selected = random.choice([True, False])
         self.statemachine.summon_phase()
 
-    def _calculate_rules_battling(self):
+    def _calculate_rules_preparing_battle(self):
         self.player.calculate_battle_stats()
         self.opponent.calculate_battle_stats()
+        self.statemachine.resume_battle_phase()
 
+    def _calculate_rules_battling(self):
+        if self.opponent.total_health > 0 and self.player.total_power > 0:
+            self.opponent.total_health -= 1
+            self.player.total_power -= 1
+        if self.player.total_health > 0 and self.opponent.total_power > 0:
+            self.player.total_health -= 1
+            self.opponent.total_power -= 1
+
+    def _calculate_rules_ending_battle(self):
+        if self.player.total_health > self.opponent.total_health:
+            self.statemachine.declare_win()
+        elif self.player.total_health < self.opponent.total_health:
+            self.statemachine.declare_loss()
+        else:
+            self.statemachine.declare_loss()
+        
     def _process_events_summoning(self, events):
         for e in events:
             for card in self.player.hand:
-                card.process_events(e)
+                card.process_events(e, self)
+            self.confirm_button.process_events(e)
+
+    def _process_events_battling(self, events):
+        for e in events:
             self.confirm_button.process_events(e)
 
 
 class Card(Clickable):
-    def __init__(self, base_UI, name, color, sprite, description):
-        self.base_UI = base_UI
+    def __init__(self, name, color, sprite, description):
         self.name = name
         self.color = color
         self.sprite = sprite
@@ -67,12 +96,12 @@ class Card(Clickable):
         self.selected = False
         self.frame = None
 
-    def _onRightClick(self, event):
+    def _onRightClick(self, event, base_ui):
         if event.type == pg.MOUSEBUTTONDOWN:
             if event.button == pg.BUTTON_RIGHT:
                 position = mouse.get_pos()
                 if self.frame.collidepoint(position):
-                    self.base_UI.toggle_description(self.description)
+                    self._show_description(base_ui)
 
     def _onLeftClick(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -81,19 +110,22 @@ class Card(Clickable):
                 if self.frame.collidepoint(position):
                     self.selected = not self.selected
 
+    def _show_description(self, base_ui):
+        base_ui.toggle_description(self.description)
+
     def draw(self, left, top):
         self.sprite.draw(left, top, self.selected)
         self.frame = self.sprite.frame
 
-    def process_events(self, event):
-        self._onRightClick(event)
+    def process_events(self, event, base_ui):
+        self._onRightClick(event, base_ui)
         self._onLeftClick(event)
 
 class DigimonCard(Card):
-    def __init__(self, base_UI, name, color, sprite, description, power=0, health=0):
+    def __init__(self, name, color, sprite, description, power=0, health=0):
         self.power = power
         self.health = health
-        super().__init__(base_UI, name, color, sprite, description)
+        super().__init__(name, color, sprite, description)
 
     def draw(self, left, top):
         self.sprite.draw(left, top, self.selected, self.power, self.health)
@@ -117,13 +149,14 @@ class Player():
         self.name = name
         self.deck = None
         self.hand = []
+        self.summoned = []
         self.total_power = 0
         self.total_health = 0
     
     def load_deck(self, card_sprite):
         cards = []
         for _ in range(40):
-            card = DigimonCard(self, 'Card', 'Brown', card_sprite, 'This is a test card', random.randrange(0, 21), random.randrange(0, 21))
+            card = DigimonCard('Card', 'Brown', card_sprite, 'This is a test card', random.randrange(0, 21), random.randrange(0, 21))
             cards.append(card)
         self.deck = Deck(cards)
 
@@ -132,7 +165,15 @@ class Player():
             self.hand.append(self.deck.draw_card())
 
     def calculate_battle_stats(self):
-        self.total_power = sum(card.power for card in self.hand if card.selected)
-        self.total_health = sum(card.health for card in self.hand if card.selected)
+        for card in self.hand:
+            if card.selected:
+                card.selected = False
+                self.summoned.append(card)
+
+        new_hand = [card for card in self.hand if card not in self.summoned]
+        self.hand = new_hand
+
+        self.total_power = sum(card.power for card in self.summoned)
+        self.total_health = sum(card.health for card in self.summoned)
     
     

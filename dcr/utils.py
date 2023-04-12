@@ -1,16 +1,14 @@
 from abc import ABCMeta, abstractmethod
-from . import views
-from .consts import colors
 from pygame import constants as pg
 from pygame import mouse as mouse
 
 class Clickable(metaclass=ABCMeta):
     @abstractmethod
-    def _onRightClick(self, event):
+    def _onRightClick(self, event, *args, **kwargs):
         pass
 
     @abstractmethod
-    def _onLeftClick(self, event):
+    def _onLeftClick(self, event, *args, **kwargs):
         pass
 
 class Button(Clickable):
