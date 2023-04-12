@@ -1,5 +1,6 @@
 from .utils.classes import Clickable, Button
 from .consts.states import States
+from .consts.suits import Suits
 from .consts import params
 from pygame import constants as pg
 from pygame import mouse as mouse
@@ -56,6 +57,7 @@ class BaseUI():
     def _calculate_rules_drawing(self):
         self.player.draw_cards()
         self.opponent.draw_cards()
+        print(self.player.energy)
         for card in self.opponent.hand:
             card.selected = random.choice([True, False])
         self.statemachine.next_battle_stage()
@@ -123,9 +125,9 @@ class BaseUI():
 
 
 class Card(Clickable):
-    def __init__(self, name, color, sprite, description):
+    def __init__(self, name, suit, sprite, description):
         self.name = name
-        self.color = color
+        self.suit = suit
         self.sprite = sprite
         self.description = description
         self.selected = False
@@ -149,7 +151,7 @@ class Card(Clickable):
         base_ui.toggle_description(self.description)
 
     def draw(self, left, top):
-        self.sprite.draw(left, top, self.selected)
+        self.sprite.draw(left, top, self.suit.value, self.selected)
         self.frame = self.sprite.frame
 
     def process_events(self, event, base_ui):
@@ -157,13 +159,13 @@ class Card(Clickable):
         self._onLeftClick(event)
 
 class DigimonCard(Card):
-    def __init__(self, name, color, sprite, description, power=0, health=0):
+    def __init__(self, name, suit, sprite, description, power=0, health=0):
         self.power = power
         self.health = health
-        super().__init__(name, color, sprite, description)
+        super().__init__(name, suit, sprite, description)
 
     def draw(self, left, top):
-        self.sprite.draw(left, top, self.selected, self.power, self.health)
+        self.sprite.draw(left, top, self.suit.value, self.selected, self.power, self.health)
         self.frame = self.sprite.frame
 
 class Deck():
@@ -197,17 +199,21 @@ class Player():
         self.total_power = 0
         self.total_health = 0
         self.score = 0
+        self.energy = {suit.name: 0 for suit in list(Suits)}
     
     def load_deck(self, card_sprite):
         cards = []
         for _ in range(40):
-            card = DigimonCard('Card', 'Brown', card_sprite, 'This is a test card', random.randrange(0, 21), random.randrange(0, 21))
+            suit = random.choice([suit for suit in list(Suits)])
+            card = DigimonCard('Card', suit, card_sprite, 'This is a test card', random.randrange(0, 21), random.randrange(0, 21))
             cards.append(card)
         self.deck = Deck(cards)
 
     def draw_cards(self):
         for _ in range(params.HAND_SIZE):
-            self.hand.append(self.deck.draw_card())
+            card = self.deck.draw_card()
+            self.hand.append(card)
+            self.energy[card.suit.name] += 1
 
     def move_card(self, from_where, move_to, card):
         move_to.append(card)

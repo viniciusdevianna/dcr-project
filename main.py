@@ -1,5 +1,4 @@
 import pygame
-import random
 from dcr import views
 from dcr import models
 from dcr import statemachine

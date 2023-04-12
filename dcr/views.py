@@ -1,4 +1,4 @@
-from pygame import draw, image
+from pygame import draw, image, Surface
 from .consts import params, colors, states
 from .utils.functions import draw_text_on_surface
 
@@ -95,9 +95,9 @@ class CardSprite():
         self.height = 150
         self.frame = None
 
-    def draw(self, left, top, selected, power=None, health=None):
+    def draw(self, left, top, suit, selected, power=None, health=None):
         # Draw card frame
-        frame = draw.rect(self.surface, colors.WHITE_TRANSPARENT, (left, top, self.width, self.height), 0)
+        frame = draw.rect(self.surface, suit, (left, top, self.width, self.height), 0)
 
         # Draw card img
         img = image.load(self.image)
@@ -107,9 +107,12 @@ class CardSprite():
         if power is not None and health is not None:
             ph_text = f'{power} / {health}'
             ph_img = self.font.render(ph_text, True, colors.BLACK)
+            temp_surface = Surface(ph_img.get_size())
+            temp_surface.fill(colors.WHITE_TRANSPARENT)
             ph_x = left + self.width - ph_img.get_width() - 5
             ph_y = top + self.height - ph_img.get_height() - 5
-            self.surface.blit(ph_img, (ph_x, ph_y))
+            temp_surface.blit(ph_img, (0, 0))
+            self.surface.blit(temp_surface, (ph_x, ph_y))
 
         if selected:
             draw.rect(self.surface, colors.SELECTED, (left, top, self.width, self.height), 2)
