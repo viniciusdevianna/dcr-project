@@ -1,3 +1,5 @@
 class States():
-    PLAYING = 0
-    PAUSED = 1
+    LOADING = 0
+    DRAWING = 1
+    SUMMONING = 2
+    BATTLING = 3

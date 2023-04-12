@@ -1,5 +1,5 @@
 from pygame import draw, image
-from .consts import params, colors
+from .consts import params, colors, states
 
 class BaseUIView():
     def __init__(self, surface, font) -> None:
@@ -7,10 +7,24 @@ class BaseUIView():
         self.font = font
         self.show_description = False
         self.description = None
+        self.confirm_button_view = ButtonSprite(self.surface, self.font, params.SCREEN_X - 60, params.SCREEN_Y - 40)
 
-    def draw(self): 
-        if self.show_description:
-            self._draw_description()
+    def draw(self, state, player, opponent):
+        if state == states.States.SUMMONING:
+            card_x = 2
+            card_y = 2
+            for card in player.hand:
+                card.draw(card_x, card_y)
+                card_x += card.sprite.width + 2
+
+            self.confirm_button_view.draw()
+            
+            if self.show_description:
+                self._draw_description()
+        
+        if state == states.States.BATTLING:
+            self.surface.fill(colors.BLACK)
+            print(f'{player.total_power} / {player.total_health} x {opponent.total_power} / {opponent.total_health}')
 
     def _draw_description(self):
         height = 50
@@ -33,6 +47,7 @@ class CardSprite():
         self.image = f'{params.CARDS_IMG_DIR}\\{image}'
         self.width = 100
         self.height = 150
+        self.frame = None
 
     def draw(self, left, top, selected, power=None, health=None):
         # Draw card frame
@@ -53,4 +68,25 @@ class CardSprite():
         if selected:
             draw.rect(self.surface, colors.SELECTED, (left, top, self.width, self.height), 2)
 
-        return frame
+        self.frame = frame
+    
+class ButtonSprite():
+    def __init__(self, surface, font, left, top, width=50, height=30, color=colors.PRIMARY, text='Confirmar') -> None:
+        self.surface = surface
+        self.font = font
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+        self.color = color
+        self.text = text
+        self.frame = None
+
+    def draw(self):
+        frame = draw.rect(self.surface, self.color, (self.left, self.top, self.width, self.height), 0)
+        btn_text = self.font.render(self.text, True, colors.WHITE)
+        btn_text_x = self.left + 5
+        btn_text_y = self.top + 5
+        self.surface.blit(btn_text, (btn_text_x, btn_text_y))
+
+        self.frame = frame

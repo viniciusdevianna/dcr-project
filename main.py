@@ -1,6 +1,8 @@
 import pygame
+import random
 from dcr import views
 from dcr import models
+from dcr import statemachine
 from dcr.consts import params, colors
 
 def setup():
@@ -8,49 +10,41 @@ def setup():
 
     display = pygame.display.set_mode((params.SCREEN_X, params.SCREEN_Y), 0)
     font = pygame.font.SysFont('arial', 14, False, False)
+    sm = statemachine.StateMachine()
 
     setup_data = {
-        'display': display,
-        'font': font
+        'screen': display,
+        'font': font,
+        'statemachine': sm
     }
 
     return setup_data
 
-def run(screen, font):
+def run(screen, font, statemachine):
+    player = models.Player('Jogador')
+    opponent = models.Player('Oponente')
     ui_view = views.BaseUIView(screen, font)
-    base_ui = models.BaseUI(ui_view)
+    base_ui = models.BaseUI(ui_view, statemachine, player, opponent)
     sprite = views.CardSprite(screen, font)
-    card_1 = models.DigimonCard(base_ui, 'Card', 'Brown', sprite, 'This is a test card', 15, 14)
-    card_2 = models.DigimonCard(base_ui, 'Card', 'Brown', sprite, 'This is another test card', 8, 12)
-    card_3 = models.DigimonCard(base_ui, 'Card', 'Brown', sprite, 'This is another test card', 1, 3)
-    card_4 = models.DigimonCard(base_ui, 'Card', 'Brown', sprite, 'This is another test card', 5, 2)
-    cards = (card_1, card_2, card_3, card_4)
+    base_ui.initial_load(sprite)
+    statemachine.draw_phase()
 
     # Game loop
     while True:
         # Calculate rules
-        
+        base_ui.calculate_rules()
 
         # Draw
         screen.fill(colors.BLACK)
-        base_ui.draw()
-        card_x = 2
-        card_y = 2
-        for card in cards:
-            card.draw(card_x, card_y)
-            card_x += card.sprite.width + 2
-        
+        base_ui.draw()       
         pygame.display.update()
         pygame.time.delay(10)
 
         # Events
         events = pygame.event.get()
-        for e in events:
-            if e.type == pygame.QUIT:
-                exit()
-            for card in cards:
-                card.process_events(e)
+        base_ui.process_events(events)            
+            
 
 if __name__ == '__main__':
     main_screen = setup()
-    run(main_screen['display'], main_screen['font'])
+    run(**main_screen)
