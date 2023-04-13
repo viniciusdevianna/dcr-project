@@ -1,4 +1,4 @@
-from pygame import draw, image, Surface
+from pygame import draw, image, Surface, constants
 from .consts import params, colors, states
 from .utils.functions import draw_text_on_surface
 
@@ -95,7 +95,7 @@ class CardSprite():
         self.height = 150
         self.frame = None
 
-    def draw(self, left, top, suit, selected, power=None, health=None):
+    def draw(self, left, top, suit, selected, power=None, health=None, level=None):
         # Draw card frame
         frame = draw.rect(self.surface, suit, (left, top, self.width, self.height), 0)
 
@@ -103,15 +103,26 @@ class CardSprite():
         img = image.load(self.image)
         self.surface.blit(img, (left + 2, top + 2))
 
-        # Draw card power and health if digimon card
-        if power is not None and health is not None:
+        # Draw card power, health and level if digimon card
+        if power is not None and health is not None and level is not None:
+            # Draw level box
+            level_text = level
+            level_img = self.font.render(level_text, True, colors.WHITE)
+            level_surface = Surface((self.width - 2, level_img.get_height()), flags=constants.SRCALPHA)
+            level_surface.fill(colors.BLACK_TRANSPARENT)
+            level_x = left + 1
+            level_y = top + img.get_height()
+            level_surface.blit(level_img, ((level_surface.get_width() - level_img.get_width()) // 2, 0))
+            self.surface.blit(level_surface, (level_x, level_y))
+            
+            # Draw power and health box
             ph_text = f'{power} / {health}'
             ph_img = self.font.render(ph_text, True, colors.BLACK)
-            temp_surface = Surface(ph_img.get_size())
+            temp_surface = Surface((self.width - 2, ph_img.get_height()), flags=constants.SRCALPHA)
             temp_surface.fill(colors.WHITE_TRANSPARENT)
-            ph_x = left + self.width - ph_img.get_width() - 5
-            ph_y = top + self.height - ph_img.get_height() - 5
-            temp_surface.blit(ph_img, (0, 0))
+            ph_x = left + 1
+            ph_y = top + self.height - ph_img.get_height()
+            temp_surface.blit(ph_img, ((temp_surface.get_width() - ph_img.get_width()) // 2, 0))
             self.surface.blit(temp_surface, (ph_x, ph_y))
 
         if selected:

@@ -1,6 +1,7 @@
 from .utils.classes import Clickable, Button
 from .consts.states import States
 from .consts.suits import Suits
+from .consts.levels import Levels
 from .consts import params
 from pygame import constants as pg
 from pygame import mouse as mouse
@@ -117,6 +118,7 @@ class BaseUI():
         for e in events:
             for card in self.player.hand:
                 card.process_events(e, self)
+                self.player.process_events(e, card, self)
             self.confirm_button.process_events(e)
 
     def _process_events_idle(self, events):
@@ -154,18 +156,21 @@ class Card(Clickable):
         self.sprite.draw(left, top, self.suit.value, self.selected)
         self.frame = self.sprite.frame
 
-    def process_events(self, event, base_ui):
-        self._onRightClick(event, base_ui)
+    def select_card(self, event):
         self._onLeftClick(event)
 
+    def process_events(self, event, base_ui):
+        self._onRightClick(event, base_ui)
+
 class DigimonCard(Card):
-    def __init__(self, name, suit, sprite, description, power=0, health=0):
+    def __init__(self, name, suit, sprite, description, power=0, health=0, level=Levels.ROOKIE):
         self.power = power
         self.health = health
+        self.level = level
         super().__init__(name, suit, sprite, description)
 
     def draw(self, left, top):
-        self.sprite.draw(left, top, self.suit.value, self.selected, self.power, self.health)
+        self.sprite.draw(left, top, self.suit.value, self.selected, self.power, self.health, self.level.name)
         self.frame = self.sprite.frame
 
 class Deck():
@@ -205,7 +210,8 @@ class Player():
         cards = []
         for _ in range(40):
             suit = random.choice([suit for suit in list(Suits)])
-            card = DigimonCard('Card', suit, card_sprite, 'This is a test card', random.randrange(0, 21), random.randrange(0, 21))
+            level = random.choice([level for level in list(Levels)])
+            card = DigimonCard('Card', suit, card_sprite, 'This is a test card', random.randrange(0, 21), random.randrange(0, 21), level)
             cards.append(card)
         self.deck = Deck(cards)
 
@@ -238,5 +244,25 @@ class Player():
 
     def won_round(self):
         self.score += 1
-    
+
+    def _choose_card(self, event, card, base_ui):
+        if isinstance(card, DigimonCard):
+            if not card.selected:
+                if self.energy[card.suit.name] >= card.level.value:
+                    card.select_card(event)
+                    self.energy[card.suit.name] -= card.level.value
+                else:
+                    base_ui.toggle_description('Você não tem energia para jogar essa carta')
+            else:
+                card.select_card(event)
+                self.energy[card.suit.name] += card.level.value
+        else:
+            card.select_card(event)
+
+    def process_events(self, event, card, base_ui):
+        if event.type == pg.MOUSEBUTTONDOWN:
+            if event.button == pg.BUTTON_LEFT:
+                position = mouse.get_pos()
+                if card.frame.collidepoint(position):
+                    self._choose_card(event, card, base_ui)
     
